@@ -84,10 +84,22 @@ async fn main() {
         // ---------------------------------------------------------------------
 
         // player --------------------------------------------------------------
-    let player_texture: Texture2D = load_texture("assets/sprites/player/player_idle.png")
+    let player_idle_texture: Texture2D = load_texture("assets/sprites/player/player_idle.png")
         .await
         .expect("FAILED TO LOAD THE PLAYER'S TEXTURE");
-    player_texture.set_filter(FilterMode::Nearest);
+    player_idle_texture.set_filter(FilterMode::Nearest);
+
+    let player_right_one_texture: Texture2D = load_texture("assets/sprites/player/player_right_one.png")
+        .await
+        .expect("FAILED TO LOAD THE PLAYER'S TEXTURE");
+    player_right_one_texture.set_filter(FilterMode::Nearest);
+    let player_left_one_texture: Texture2D = load_texture("assets/sprites/player/player_left_one.png")
+        .await
+        .expect("FAILED TO LOAD THE PLAYER'S TEXTURE");
+    player_left_one_texture.set_filter(FilterMode::Nearest);
+
+    let player_textures: [Texture2D; 3] = [player_idle_texture, player_right_one_texture, player_left_one_texture];
+
     let mut player: Player = Player {
         x: 100.0,
         y: 100.0,
@@ -97,9 +109,7 @@ async fn main() {
         jump_height: 12.0,
         gravity: 0.5,
         on_ground: false,
-        texture: player_texture.clone(),
-        height: tile_size,
-        width: tile_size,
+        texture: player_textures,
         collider: BoxCollider { x: 100.0, y: 100.0, width: tile_size - 40.0, height: tile_size },
     };
 
@@ -152,6 +162,12 @@ async fn main() {
 
         // ---------------------------------------------------------------------
 
+        // animation variables -------------------------------------------------
+    let mut timer: f32 = 0.0;
+    let mut frame_index: usize = 0;
+    let frame_duraration: f32 = 0.2;
+        // ---------------------------------------------------------------------
+
     // -------------------------------------------------------------------------
 
     // game loop ---------------------------------------------------------------
@@ -159,7 +175,46 @@ async fn main() {
         
         update(&mut player, &mut coin, &tiles, &mut score,);
 
-        draw(&player, &coin, &tilemap, tile_size, score, &score_object, &tile_textures);
+        draw(&coin, &tilemap, tile_size, score, &score_object, &tile_textures);
+
+        if player.x_velocity > 0.0 {
+            timer += get_frame_time();
+            if timer > frame_duraration {
+                timer = 0.0;
+                if frame_index == 1 {
+                    frame_index = 0;
+                }
+                else if frame_index == 0 {
+                    frame_index = 1;
+                }
+            }
+        }
+        else if player.x_velocity < 0.0 {
+            timer += get_frame_time();
+            if timer > frame_duraration {
+                timer = 0.0;
+                if frame_index == 2 {
+                    frame_index = 0;
+                }
+                else if frame_index == 0 {
+                    frame_index = 2;
+                }
+            }
+        }
+        else {
+            frame_index = 0;
+            timer = frame_duraration;
+        }
+        
+
+        draw_texture_ex(&player.render(frame_index), player.x - 20.0, player.y, WHITE, DrawTextureParams { 
+            dest_size: Some(vec2(tile_size, tile_size)),
+            source: None,
+            rotation: 0.0,
+            flip_x: false,
+            flip_y: false,
+            pivot: Some(vec2(0.0, 0.0))
+        });
 
         thread::sleep(Duration::from_millis(16));
         next_frame().await;
@@ -220,7 +275,7 @@ fn update(player: &mut Player, coin: &mut Coin, tiles: &Vec<BoxCollider>, score:
 }
 
 // draws once per frame
-fn draw(player: &Player, coin: &Coin, tilemap: &[[char; 13]; 11], tile_size: f32, score: i16, score_object: &Object, tile_textures: &[Texture2D; 2]) {
+fn draw(coin: &Coin, tilemap: &[[char; 13]; 11], tile_size: f32, score: i16, score_object: &Object, tile_textures: &[Texture2D; 2]) {
 
     clear_background(Color { r: 0.388, g: 0.361, b: 0.427, a: 1.0});
 
@@ -255,12 +310,5 @@ fn draw(player: &Player, coin: &Coin, tilemap: &[[char; 13]; 11], tile_size: f32
 
     draw_text(&score.to_string(), score_object.x, score_object.y, score_object.width + score_object.height, BLACK);
 
-    draw_texture_ex(&player.texture, player.x - 20.0, player.y, WHITE, DrawTextureParams { 
-        dest_size: Some(vec2(tile_size, tile_size)),
-        source: None,
-        rotation: 0.0,
-        flip_x: false,
-        flip_y: false,
-        pivot: Some(vec2(0.0, 0.0))
-    });
+    
 }

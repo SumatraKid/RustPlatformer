@@ -11,9 +11,7 @@ pub struct Player {
     pub jump_height: f32,
     pub gravity: f32,
     pub on_ground: bool,
-    pub texture: Texture2D,
-    pub height: f32,
-    pub width: f32,
+    pub texture: [Texture2D; 3],
     pub collider: BoxCollider,
 }
 
@@ -59,5 +57,11 @@ impl Player {
             self.y_velocity += self.gravity;
         }
 
+    }
+
+    pub fn render(&self, frame_index: usize) -> &Texture2D {
+        let rendered_texture: &Texture2D = &self.texture[frame_index];
+
+        return rendered_texture;
     }
 }
